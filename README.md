@@ -166,9 +166,9 @@ the fields this app actually uses:
   the same problem twice, and resumes normally when a new version is deployed.
 - Specs and prices are only displayed: if they can't be read they're shown as `n/a`.
 
-`make smoke` checks the live APIs against these expectations. GitHub Actions runs it every
-Monday and on every push to `main`: if OVH changes something, the failed workflow tells you
-before your scraper does.
+`make smoke` checks the live APIs against these expectations. The same check is available as a
+GitHub Actions workflow, run manually for now (*Actions → OVH API smoke test → Run workflow*);
+`.github/workflows/smoke.yml` shows how to schedule it.
 
 ## Deploying from GHCR (private repository)
 

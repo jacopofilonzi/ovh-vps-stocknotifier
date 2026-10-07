@@ -1,11 +1,13 @@
 name: OVH API smoke test
 
-# Fails (and GitHub emails you) when the live OVH APIs no longer match what this version expects.
+# Checks the live OVH APIs still match what this version expects (same as `make smoke`).
+# Manual only for now: run it from Actions → "OVH API smoke test" → Run workflow.
+# To run it automatically, add triggers such as:
+#   schedule:
+#     - cron: "0 6 * * 1" # Mondays, 06:00 UTC
+#   push:
+#     branches: [main]
 on:
-  schedule:
-    - cron: "0 6 * * 1" # Mondays, 06:00 UTC
-  push:
-    branches: [main]
   workflow_dispatch:
 
 jobs:
