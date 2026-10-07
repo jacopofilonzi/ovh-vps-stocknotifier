@@ -13,6 +13,8 @@ export function eventEmoji(event: AppEvent): string {
       return { degraded: "🛠️", recovered: "✅", halted: "⛔", "state-reset": "⚠️" }[event.status];
     case "notifier":
       return event.failing ? "⚠️" : "✅";
+    case "test":
+      return "🔔";
   }
 }
 
@@ -47,13 +49,23 @@ export function describeEvent(event: AppEvent): string {
       return event.failing
         ? `Notifier "${event.name}" is failing: ${event.error}`
         : `Notifier "${event.name}" is working again`;
+    case "test":
+      return `Test notification from ${APP_NAME}: this notifier works`;
   }
 }
 
 /** Events sorted by importance: app problems first, then purchases, then stock. */
 export function sortEvents(events: readonly AppEvent[]): AppEvent[] {
   const rank = (e: AppEvent) =>
-    e.kind === "health" ? 0 : e.kind === "notifier" ? 1 : e.kind === "orderability" ? 2 : e.status === "available" ? 3 : 4;
+    e.kind === "health" || e.kind === "test"
+      ? 0
+      : e.kind === "notifier"
+        ? 1
+        : e.kind === "orderability"
+          ? 2
+          : e.status === "available"
+            ? 3
+            : 4;
   return [...events].sort((a, b) => rank(a) - rank(b));
 }
 

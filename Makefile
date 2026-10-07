@@ -5,13 +5,16 @@
 export DATA_DIR ?= ./temp
 
 .DEFAULT_GOAL := help
-.PHONY: help install scraper dev once status reset-state test typecheck check smoke clean
+.PHONY: help install tui scraper dev once status reset-state test typecheck check smoke clean
 
 help: ## List the available targets
 	@node -e "for (const l of require('fs').readFileSync('Makefile','utf8').split('\n')) { const m = l.match(/^([a-z-]+):.*## (.*)/); if (m) console.log('  ' + m[1].padEnd(14) + m[2]); }"
 
 install: ## Install dependencies
 	pnpm install --frozen-lockfile
+
+tui: ## Open the configuration TUI
+	node src/main.ts tui
 
 scraper: ## Run the scraper in the foreground (Ctrl+C to stop)
 	node src/main.ts scraper

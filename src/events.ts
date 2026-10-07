@@ -39,7 +39,12 @@ export type NotifierHealthEvent = {
   error?: string;
 };
 
-export type AppEvent = StockEvent | OrderabilityEvent | HealthEvent | NotifierHealthEvent;
+/** Sent from the TUI to check a notifier works. */
+export type TestEvent = {
+  kind: "test";
+};
+
+export type AppEvent = StockEvent | OrderabilityEvent | HealthEvent | NotifierHealthEvent | TestEvent;
 
 export type Notification = {
   events: AppEvent[];

@@ -2,10 +2,12 @@ import { runHealthcheck } from "./healthcheck.ts";
 import { runScraper } from "./scraper/index.ts";
 import { runSmoke } from "./smoke.ts";
 import { runStatus } from "./status.ts";
+import { runTui } from "./tui/index.ts";
 import { APP_NAME, APP_VERSION } from "./shared/version.ts";
 
 const COMMANDS: Record<string, { description: string; run: () => Promise<number> }> = {
   scraper: { description: "run the scraper (--once: run a single check and exit)", run: () => runScraper({ once: process.argv.includes("--once") }) },
+  tui: { description: "configure the scraper interactively", run: runTui },
   status: { description: "print the stored stock status", run: runStatus },
   healthcheck: { description: "exit 0 if the scraper is healthy (Docker HEALTHCHECK)", run: runHealthcheck },
   smoke: { description: "check the live OVH APIs still match this version", run: runSmoke },

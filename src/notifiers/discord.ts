@@ -86,6 +86,8 @@ function toEmbed(event: AppEvent, notification: Notification): Embed {
       return { title, color: event.status === "recovered" ? COLORS.available : COLORS.problem };
     case "notifier":
       return { title, color: event.failing ? COLORS.withdrawn : COLORS.available };
+    case "test":
+      return { title, color: COLORS.orderable };
   }
 }
 

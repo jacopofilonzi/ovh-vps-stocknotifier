@@ -3,8 +3,8 @@
 Watches the stock of OVHcloud VPS plans and notifies you when the plans you care about become
 available (or run out again) in the datacenters you choose.
 
-> **Work in progress.** The scraper and the notifiers work; the TUI and the Docker
-> images are being built. This README grows with them.
+> **Work in progress.** The scraper, the notifiers and the TUI work; the Docker images are
+> being built.
 
 ## What it watches
 
@@ -21,6 +21,42 @@ Prices, currency and VAT follow the OVH subsidiary you choose:
 IT, FR, DE, ES, GB, IE, NL, PL, PT, MA, SN, TN, CA, QC, AU, SG, IN, ASIA, WE, WS, US.
 
 The US subsidiary has its own plan codes and datacenters.
+
+## Configuration (TUI)
+
+The TUI writes `config.json`; the scraper picks up every change within a few seconds, no restart
+needed.
+
+- **First run**: a setup wizard asks, in order, for the subsidiary, datacenters, operating
+  systems, plans, notifiers (optional) and check interval. Nothing is saved until you confirm
+  at the end, so the scraper never starts from a half-done configuration.
+- **Afterwards**: a settings menu, with a summary of the configuration and of the scraper's
+  status. Every confirmed change is saved right away.
+- **Plans** are listed with vCore, RAM and monthly price, and only those on sale in the selected
+  datacenters. A watched plan that was withdrawn stays listed as `(withdrawn)`.
+- **Notifiers** can be tested with a plain test message, or with a *preview with live data*: the
+  current stock of your plans, sent as if it had just changed (marked `[TEST]`, without
+  touching the stored state).
+- Changing the subsidiary or the datacenters removes, after asking, the choices that no longer
+  apply.
+
+Keys: arrows to move, Space to toggle, Enter to confirm, **Esc to go back**, Ctrl+C to quit.
+
+```text
+OVH VPS Stock Notifier 1.0.0
+ Subsidiary   IT · Italy (EUR)
+ Datacenters  Milano (IT)
+ OS           Linux
+ Plans        VPS-1 2027, VPS-2 2027
+ Notifiers    Telegram ✓, ntfy ✓
+ Interval     5 min
+ Scraper      ✅ running · last check 11:40:02
+
+? What do you want to do?
+❯ Subsidiary          IT · Italy (EUR)
+  Datacenters         Milano (IT)
+  ...
+```
 
 ## Notifiers
 
@@ -120,6 +156,7 @@ Locally, data files live in `./temp` instead of `/data` (see `DATA_DIR`).
 | --- | --- |
 | `make help` | List the available targets |
 | `make install` | Install dependencies |
+| `make tui` | Open the configuration TUI |
 | `make scraper` | Run the scraper in the foreground (Ctrl+C to stop) |
 | `make dev` | Run the scraper, restarting it when a file in `src/` changes |
 | `make once` | Run a single check and exit |
