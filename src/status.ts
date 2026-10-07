@@ -1,18 +1,12 @@
 import { loadConfig } from "./config/store.ts";
 import { formatColumns } from "./shared/table.ts";
 import { STATE_PATH } from "./shared/paths.ts";
+import { formatTime } from "./shared/time.ts";
+import { describeLiveness, liveness } from "./state/liveness.ts";
 import { stockKey, type State } from "./state/schema.ts";
 import { peekState } from "./state/store.ts";
 
 const OS_LABEL = { linux: "Linux", windows: "Windows" } as const;
-
-/** Time of day for today's dates, date and time otherwise. */
-export function formatTime(iso: string | undefined): string {
-  if (!iso) return "never";
-  const date = new Date(iso);
-  const sameDay = date.toDateString() === new Date().toDateString();
-  return sameDay ? date.toLocaleTimeString("en-GB") : date.toLocaleString("en-GB");
-}
 
 /** The status table shown by `make status` and in the TUI, from the stored state. */
 export async function statusLines(): Promise<string[]> {
@@ -55,7 +49,8 @@ function stockCell(state: State, planCode: string, dc: string, systems: readonly
 
 function healthLines(state: State): string[] {
   const { health } = state;
-  if (state.phase === "waiting-config") return ["Scraper is waiting for a configuration."];
+  const live = liveness(state);
+  if (live === "stopped" || live === "dead" || live === "waiting-config") return [`⚠️ ${describeLiveness(state)}.`];
   if (health.status === "halted") {
     return [`⛔ Scraper stopped since ${formatTime(health.since)}: ${health.signature}`, "Update to a newer version."];
   }

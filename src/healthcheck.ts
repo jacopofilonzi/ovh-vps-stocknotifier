@@ -15,6 +15,7 @@ export async function runHealthcheck(): Promise<number> {
     const now = Date.now();
     if (now - Date.parse(state.heartbeat) > HEARTBEAT_MAX_AGE_MS) return "heartbeat is stale";
     if (state.phase === "halted") return `halted: ${state.health.signature}`;
+    if (state.phase === "stopped") return "stopped";
     if (state.phase === "running") {
       const maxAge = Math.max(60 * MINUTE, 6 * (state.intervalSeconds ?? 300) * 1000);
       const lastSuccess = Date.parse(state.lastSuccess ?? state.health.since);

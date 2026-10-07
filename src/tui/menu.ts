@@ -5,6 +5,7 @@ import type { Catalog } from "../ovh/catalog.ts";
 import { peekState } from "../state/store.ts";
 import { statusLines } from "../status.ts";
 import { getCatalog } from "./catalog.ts";
+import { checkNow } from "./check-now.ts";
 import { editDatacenters, editSubsidiary } from "./location.ts";
 import { editNotifiers } from "./notifiers.ts";
 import { editInterval, editSystems } from "./options.ts";
@@ -50,11 +51,12 @@ export async function runMenu(initial: Config) {
         { name: `Check interval      ${value(d.interval)}`, value: "interval" },
         new Separator(),
         { name: "Status", value: "status" },
+        { name: "Check now", value: "check-now" },
         { name: "Send current stock to all enabled notifiers", value: "send-now" },
         { name: "Run the setup wizard again", value: "wizard" },
         { name: "Exit", value: "exit" },
       ],
-      pageSize: 12,
+      pageSize: 14,
     });
 
     let next: Config | Back = BACK;
@@ -84,6 +86,10 @@ export async function runMenu(initial: Config) {
       case "status":
         clearScreen();
         await pause(await statusLines());
+        break;
+      case "check-now":
+        clearScreen();
+        await checkNow(config);
         break;
       case "send-now": {
         clearScreen();

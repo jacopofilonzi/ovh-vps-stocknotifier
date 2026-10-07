@@ -52,6 +52,9 @@ needed.
   current stock of your plans, fetched right now (marked `[TEST]`, without touching the stored
   state). *Send current stock to all enabled notifiers* in the main menu does the same in one
   step.
+- **Check now** asks the running scraper for an immediate check (see
+  [How it works](#how-it-works)) and shows what it found. If the scraper isn't running, it
+  offers a read-only check instead: the live stock is shown, but nothing is notified or saved.
 - Changing the subsidiary or the datacenters removes, after asking, the choices that no longer
   apply.
 
@@ -121,6 +124,14 @@ and `test` (sent from the TUI). Every event has a ready-made `message`.
 - **Schedule.** The first check runs at startup, the next one `interval` after the previous
   one ends (±10% jitter), so checks never overlap. `config.json` is re-read before every check,
   and a change while waiting reschedules the next check right away.
+- **Check now.** The TUI (or `node src/main.ts check-now`) creates a `check-now` file in the data
+  directory; the scraper notices it within 2 seconds, runs a check right away (skipping any
+  backoff, or retrying if halted), then deletes it. Only the scraper ever checks for real, so
+  notifications and `state.json` stay consistent. A check that ran less than 30 seconds earlier
+  is shown instead of running a new one.
+- **Is the scraper alive?** It refreshes a heartbeat in `state.json` every 30 seconds and writes
+  `stopped` on a clean shutdown. A crash can't be reported by the crashed process: the TUI
+  treats a heartbeat older than 90 seconds as "not responding".
 - **Waiting for a configuration.** Without a usable `config.json` (missing, or no plan or
   datacenter selected) the scraper waits for one instead of exiting: you can start it first and
   configure it afterwards.
@@ -213,6 +224,7 @@ Locally, data files live in `./temp` instead of `/data` (see `DATA_DIR`).
 | `make scraper` | Run the scraper in the foreground (Ctrl+C to stop) |
 | `make dev` | Run the scraper, restarting it when a file in `src/` changes |
 | `make once` | Run a single check and exit |
+| `make check-now` | Ask the running scraper (`make scraper`) for an immediate check |
 | `make status` | Print the stored stock status |
 | `make reset-state` | Delete `state.json`, to simulate a first run (keeps the config) |
 | `make test` | Run the unit tests |

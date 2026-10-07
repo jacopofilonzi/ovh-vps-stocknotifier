@@ -5,11 +5,10 @@ import { getSubsidiary } from "../ovh/subsidiaries.ts";
 import { formatColumns } from "../shared/table.ts";
 import { APP_NAME, APP_VERSION } from "../shared/version.ts";
 import type { State } from "../state/schema.ts";
-import { formatTime } from "../status.ts";
+import { formatTime } from "../shared/time.ts";
+import { liveness } from "../state/liveness.ts";
 import { formatInterval } from "./options.ts";
 import { bold, dim, green, red, yellow } from "./prompt.ts";
-
-const HEARTBEAT_STALE_MS = 3 * 60_000;
 
 /** Config values as shown in the summary and in the main menu. */
 export function describe(config: Config, catalog: Catalog | null, state: State | null) {
@@ -43,14 +42,21 @@ export function describe(config: Config, catalog: Catalog | null, state: State |
 }
 
 export function scraperStatus(state: State | null): string {
-  if (!state) return dim("not started yet");
-  if (Date.now() - Date.parse(state.heartbeat) > HEARTBEAT_STALE_MS) {
-    return yellow(`⚠️ not running (last seen ${formatTime(state.heartbeat)})`);
+  switch (liveness(state)) {
+    case "never-started":
+      return dim("not started yet");
+    case "stopped":
+      return yellow(`⏹ stopped at ${formatTime(state!.heartbeat)}`);
+    case "dead":
+      return red(`⚠️ not responding since ${formatTime(state!.heartbeat)} (crashed?)`);
+    case "waiting-config":
+      return "waiting for a configuration";
+    case "halted":
+      return red(`⛔ halted: ${state!.health.signature}. Update to a newer version`);
+    case "running":
+      if (state!.health.status === "degraded") return yellow(`🛠️ degraded: ${state!.health.lastError}`);
+      return green(`✅ running · last check ${formatTime(state!.lastCheck)}`);
   }
-  if (state.phase === "waiting-config") return "waiting for a configuration";
-  if (state.phase === "halted") return red(`⛔ stopped: ${state.health.signature}. Update to a newer version`);
-  if (state.health.status === "degraded") return yellow(`🛠️ degraded: ${state.health.lastError}`);
-  return green(`✅ running · last check ${formatTime(state.lastCheck)}`);
 }
 
 /** Summary shown above menus. The scraper row is shown only when `state` is passed (null: no state.json). */

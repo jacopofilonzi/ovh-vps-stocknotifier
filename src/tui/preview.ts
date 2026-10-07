@@ -27,7 +27,8 @@ export async function sendLivePreview(config: Config, catalog: Catalog, notifier
   await sendAndReport(notifiers, notification(config, events));
 }
 
-async function liveEvents(config: Config, catalog: Catalog): Promise<AppEvent[]> {
+/** Current stock of the watched plans, as events. Read-only: nothing is stored or notified. */
+export async function liveEvents(config: Config, catalog: Catalog): Promise<AppEvent[]> {
   const events: AppEvent[] = [];
   const checks: { plan: CatalogPlan; datacenters: string[] }[] = [];
   for (const planCode of config.plans) {

@@ -3,6 +3,11 @@ import { z } from "zod";
 /** Bump when the state shape changes: an older state.json is then discarded and rebuilt from scratch. */
 export const STATE_SCHEMA_VERSION = 1;
 
+/** How often the scraper refreshes `heartbeat`, even while waiting. */
+export const HEARTBEAT_INTERVAL_MS = 30_000;
+/** A heartbeat older than this means the scraper died without saying so (crash, kill -9, power loss). */
+export const HEARTBEAT_STALE_MS = 90_000;
+
 const isoDate = z.iso.datetime();
 
 const planInfoSchema = z.object({
@@ -16,8 +21,9 @@ const planInfoSchema = z.object({
 export const stateSchema = z.object({
   stateSchemaVersion: z.literal(STATE_SCHEMA_VERSION),
   appVersion: z.string(),
-  phase: z.enum(["waiting-config", "running", "halted"]),
-  /** Updated every tick and every minute while waiting: tells the healthcheck the process is alive. */
+  /** `stopped` is written on a clean shutdown; a crash leaves the last phase and a stale heartbeat. */
+  phase: z.enum(["waiting-config", "running", "halted", "stopped"]),
+  /** Updated every tick and every HEARTBEAT_INTERVAL_MS while waiting: tells others the process is alive. */
   heartbeat: isoDate,
   /** Subsidiary the plans and stock below refer to: they're reset when it changes. */
   subsidiary: z.string().optional(),
@@ -25,6 +31,8 @@ export const stateSchema = z.object({
   lastCheck: isoDate.optional(),
   lastSuccess: isoDate.optional(),
   catalogCheckedAt: isoDate.optional(),
+  /** Events of the last check, as shown in notifications: displayed by the TUI after "Check now". */
+  lastEvents: z.array(z.string()).optional(),
 
   /** Monitored plans, by plan code. `info` is kept for notifications and the status table. */
   plans: z.record(

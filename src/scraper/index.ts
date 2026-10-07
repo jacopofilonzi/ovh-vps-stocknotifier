@@ -3,6 +3,7 @@ import path from "node:path";
 import type { Config } from "../config/schema.ts";
 import { loadConfig } from "../config/store.ts";
 import type { AppEvent } from "../events.ts";
+import { describeEvent, eventEmoji } from "../notifiers/format.ts";
 import { markReported, updateNotifierHealth } from "../notifiers/health.ts";
 import { dispatch } from "../notifiers/index.ts";
 import type { Catalog } from "../ovh/catalog.ts";
@@ -10,13 +11,12 @@ import { getSubsidiary } from "../ovh/subsidiaries.ts";
 import { log, logOnce, resetLogOnce } from "../shared/log.ts";
 import { DATA_DIR } from "../shared/paths.ts";
 import { APP_NAME, APP_VERSION, REPO_URL } from "../shared/version.ts";
-import type { State } from "../state/schema.ts";
+import { HEARTBEAT_INTERVAL_MS, type State } from "../state/schema.ts";
 import { loadState, saveState } from "../state/store.ts";
 import { updateHealth } from "./health.ts";
-import { nextDelayMs, waitFor } from "./schedule.ts";
+import { consumeCheckRequest, nextDelayMs, waitFor } from "./schedule.ts";
 import { isIncompatible, runTick } from "./tick.ts";
 
-const HEARTBEAT_MS = 60_000;
 const TUI_HINT = "run the TUI to configure it (docker compose run --rm notifier tui, or make tui)";
 
 type Usable = { config: Config } | { config?: undefined; level: "info" | "warn" | "error"; reason: string };
@@ -51,7 +51,7 @@ export async function runScraper({ once = false } = {}): Promise<number> {
   const heartbeat = setInterval(() => {
     state.heartbeat = new Date().toISOString();
     saveState(state).catch((err) => log.error(`saving state failed: ${err.message}`));
-  }, HEARTBEAT_MS);
+  }, HEARTBEAT_INTERVAL_MS);
 
   let catalog: Catalog | null = null;
   let lastGood: Config | null = null;
@@ -66,7 +66,10 @@ export async function runScraper({ once = false } = {}): Promise<number> {
         state.phase = "waiting-config";
         await saveState(state);
         if (once) return 1;
-        await waitFor({ signal: controller.signal });
+        if ((await waitFor({ signal: controller.signal })) === "check-now") {
+          log.info("check requested, but there is no usable configuration yet");
+          await consumeCheckRequest();
+        }
         continue;
       }
       const config = usable.config;
@@ -83,7 +86,8 @@ export async function runScraper({ once = false } = {}): Promise<number> {
         state.phase = "halted";
         await saveState(state);
         if (once) return 1;
-        retryHalted = (await waitFor({ signal: controller.signal })) === "config";
+        const reason = await waitFor({ signal: controller.signal });
+        retryHalted = reason === "config" || reason === "check-now";
         continue;
       }
       retryHalted = false;
@@ -93,16 +97,21 @@ export async function runScraper({ once = false } = {}): Promise<number> {
 
       const tickEnd = Date.now();
       if (state.health.status === "halted") continue;
-      // Wait for the next tick; a config change reschedules it from the end of this tick.
+      // Wait for the next tick. A config change reschedules it from the end of this tick;
+      // a check request (from the TUI) runs it right away, skipping any backoff.
       while (true) {
         const interval = (await usableConfig(lastGood)).config?.intervalSeconds ?? config.intervalSeconds;
         const delay = tickEnd + nextDelayMs(interval, state.health) - Date.now();
         log.debug(`next check in ${Math.round(delay / 1000)}s`);
-        if ((await waitFor({ ms: delay, signal: controller.signal })) !== "config") break;
+        const reason = await waitFor({ ms: delay, signal: controller.signal });
+        if (reason === "check-now") log.info("check requested");
+        if (reason !== "config") break;
       }
     }
   } finally {
     clearInterval(heartbeat);
+    state.phase = "stopped";
+    state.heartbeat = new Date().toISOString();
     await saveState(state);
   }
   return 0;
@@ -159,7 +168,10 @@ async function check(
     }
   }
 
+  state.lastEvents = events.map((e) => `${eventEmoji(e)} ${describeEvent(e)}`);
   await saveState(state);
+  // Any pending check request is served by this check (saved first: the TUI reads it once the request is gone).
+  await consumeCheckRequest();
   const changes = events.length ? `${events.length} event(s)` : "no changes";
   log.info(
     `checked ${config.plans.length} plan(s) × ${config.datacenters.length} datacenter(s) × ${config.os.join("+")}: ` +

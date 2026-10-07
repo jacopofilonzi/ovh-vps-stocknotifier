@@ -5,7 +5,7 @@
 export DATA_DIR ?= ./temp
 
 .DEFAULT_GOAL := help
-.PHONY: help install tui scraper dev once status reset-state test typecheck check smoke clean docker-build docker-up docker-tui
+.PHONY: help install tui scraper dev once check-now status reset-state test typecheck check smoke clean docker-build docker-up docker-tui
 
 help: ## List the available targets
 	@node -e "for (const l of require('fs').readFileSync('Makefile','utf8').split('\n')) { const m = l.match(/^([a-z-]+):.*## (.*)/); if (m) console.log('  ' + m[1].padEnd(14) + m[2]); }"
@@ -24,6 +24,9 @@ dev: ## Run the scraper, restarting it when a file in src/ changes
 
 once: ## Run a single check and exit
 	node src/main.ts scraper --once
+
+check-now: ## Ask the running scraper (make scraper) for an immediate check
+	node src/main.ts check-now
 
 status: ## Print the stored stock status
 	node src/main.ts status
