@@ -49,8 +49,9 @@ needed.
 - **Plans** are listed with vCore, RAM and monthly price, and only those on sale in the selected
   datacenters. A watched plan that was withdrawn stays listed as `(withdrawn)`.
 - **Notifiers** can be tested with a plain test message, or with a *preview with live data*: the
-  current stock of your plans, sent as if it had just changed (marked `[TEST]`, without
-  touching the stored state).
+  current stock of your plans, fetched right now (marked `[TEST]`, without touching the stored
+  state). *Send current stock to all enabled notifiers* in the main menu does the same in one
+  step.
 - Changing the subsidiary or the datacenters removes, after asking, the choices that no longer
   apply.
 

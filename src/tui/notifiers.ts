@@ -27,7 +27,7 @@ export async function editNotifiers(
         ...config.notifiers.map((n) => ({ name: notifierLine(n, state), value: `edit:${n.id}` })),
         new Separator(),
         { name: "+ Add notifier", value: "add" },
-        ...(enabled.length > 1
+        ...(enabled.length > 0
           ? [
               { name: "Send a test notification to all enabled", value: "test-all" },
               { name: "Send a preview with live data to all enabled", value: "preview-all" },

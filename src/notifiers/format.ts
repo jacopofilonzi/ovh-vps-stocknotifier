@@ -84,7 +84,9 @@ export function notificationTitle(notification: Notification): string {
           : APP_NAME;
     return `${prefix}${eventEmoji(first)} ${short}`;
   }
-  return `${prefix}${eventEmoji(first)} OVH VPS: ${events.length} changes`;
+  // Test notifications carry a snapshot of the current stock, not changes.
+  const what = notification.test ? "current stock" : `${events.length} changes`;
+  return `${prefix}${eventEmoji(first)} OVH VPS: ${what}`;
 }
 
 /** Plain-text body: one line per event, then the order link if a plan event is included. */

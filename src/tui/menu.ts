@@ -9,7 +9,8 @@ import { editDatacenters, editSubsidiary } from "./location.ts";
 import { editNotifiers } from "./notifiers.ts";
 import { editInterval, editSystems } from "./options.ts";
 import { editPlans } from "./plans.ts";
-import { ask, BACK, clearScreen, dim, green, pause, type Back } from "./prompt.ts";
+import { sendLivePreview } from "./preview.ts";
+import { ask, BACK, clearScreen, dim, green, pause, yellow, type Back } from "./prompt.ts";
 import { describe, summaryLines } from "./summary.ts";
 import { runWizard } from "./wizard.ts";
 
@@ -49,6 +50,7 @@ export async function runMenu(initial: Config) {
         { name: `Check interval      ${value(d.interval)}`, value: "interval" },
         new Separator(),
         { name: "Status", value: "status" },
+        { name: "Send current stock to all enabled notifiers", value: "send-now" },
         { name: "Run the setup wizard again", value: "wizard" },
         { name: "Exit", value: "exit" },
       ],
@@ -83,6 +85,18 @@ export async function runMenu(initial: Config) {
         clearScreen();
         await pause(await statusLines());
         break;
+      case "send-now": {
+        clearScreen();
+        const enabled = config.notifiers.filter((n) => n.enabled);
+        if (enabled.length === 0) {
+          await pause([yellow("No notifier enabled: add or enable one in Notifiers.")]);
+          break;
+        }
+        const catalog = await getCatalog(config.subsidiary);
+        if (catalog !== BACK) await sendLivePreview(config, catalog, enabled);
+        await pause();
+        break;
+      }
       case "wizard":
         config = (await runWizard(config)) ?? config;
         break;
