@@ -5,7 +5,7 @@
 export DATA_DIR ?= ./temp
 
 .DEFAULT_GOAL := help
-.PHONY: help install tui scraper dev once status reset-state test typecheck check smoke clean
+.PHONY: help install tui scraper dev once status reset-state test typecheck check smoke clean docker-build docker-up docker-tui
 
 help: ## List the available targets
 	@node -e "for (const l of require('fs').readFileSync('Makefile','utf8').split('\n')) { const m = l.match(/^([a-z-]+):.*## (.*)/); if (m) console.log('  ' + m[1].padEnd(14) + m[2]); }"
@@ -44,3 +44,12 @@ smoke: ## Check the live OVH APIs still match this version
 
 clean: ## Delete the local data directory
 	node -e "require('fs').rmSync(process.env.DATA_DIR, { recursive: true, force: true })"
+
+docker-build: ## Build the Docker image from this checkout
+	docker compose -f docker-compose.dev.yaml build
+
+docker-up: ## Start the scraper in the development container (data in ./data)
+	docker compose -f docker-compose.dev.yaml up -d --build
+
+docker-tui: ## Open the TUI in the development container
+	docker compose -f docker-compose.dev.yaml run --rm notifier tui

@@ -1,0 +1,13 @@
+# Production: runs the image published on GitHub Container Registry.
+#   docker compose up -d                       start the scraper
+#   docker compose run --rm notifier tui       configure it
+#   docker compose logs -f                     follow the logs
+services:
+  notifier:
+    image: ghcr.io/jacopofilonzi/ovh-vps-stocknotifier:latest
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Rome
+      LOG_LEVEL: info
+    volumes:
+      - ./data:/data

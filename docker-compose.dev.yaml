@@ -1,0 +1,13 @@
+# Development: builds the image from this checkout.
+#   docker compose -f docker-compose.dev.yaml up -d --build
+#   docker compose -f docker-compose.dev.yaml run --rm notifier tui
+services:
+  notifier:
+    build: .
+    image: ovh-vps-stocknotifier:dev
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Rome
+      LOG_LEVEL: debug
+    volumes:
+      - ./data:/data

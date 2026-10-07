@@ -3,8 +3,22 @@
 Watches the stock of OVHcloud VPS plans and notifies you when the plans you care about become
 available (or run out again) in the datacenters you choose.
 
-> **Work in progress.** The scraper, the notifiers and the TUI work; the Docker images are
-> being built.
+## Quick start (Docker)
+
+```sh
+mkdir ovh-vps-stocknotifier && cd ovh-vps-stocknotifier
+# copy docker-compose.yaml from this repository here, then:
+mkdir data
+docker compose up -d                      # start the scraper: it waits for a configuration
+docker compose run --rm notifier tui      # configure it: it starts checking within seconds
+docker compose logs -f                    # follow what it does
+```
+
+The image is private as long as the repository is: see
+[Deploying from GHCR](#deploying-from-ghcr-private-repository) to log in first.
+
+On Linux, `data/` must be writable by the container user (uid 1000):
+`sudo chown 1000:1000 data` if you created it as another user. The scraper tells you if it isn't.
 
 ## What it watches
 
@@ -98,8 +112,8 @@ notifiers that work, and again when it recovers.
 ```
 
 Other event kinds: `orderability` (`orderable`, `plan`), `health` (`status`: `degraded`,
-`recovered`, `halted` or `state-reset`, `detail`) and `notifier` (`id`, `name`, `failing`, `error`).
-Every event has a ready-made `message`.
+`recovered`, `halted` or `state-reset`, `detail`), `notifier` (`id`, `name`, `failing`, `error`)
+and `test` (sent from the TUI). Every event has a ready-made `message`.
 
 ## How it works
 
@@ -121,8 +135,9 @@ Every event has a ready-made `message`.
 - **Data files.** `config.json` is written only by the TUI, `state.json` only by the scraper,
   always atomically. A corrupted `state.json` is moved aside and rebuilt (you're notified); one
   written by an incompatible version is discarded.
-- **Healthcheck.** `node src/main.ts healthcheck` fails when the scraper is stuck, halted, or
-  hasn't completed a check for more than an hour (or 6 intervals).
+- **Healthcheck.** The Docker image marks the container `unhealthy` (see `docker ps`) when the
+  scraper is stuck, halted, or hasn't completed a check for more than an hour (or 6 intervals).
+  Waiting for a configuration counts as healthy.
 
 ## How it deals with API changes
 
@@ -139,7 +154,44 @@ the fields this app actually uses:
   the same problem twice, and resumes normally when a new version is deployed.
 - Specs and prices are only displayed: if they can't be read they're shown as `n/a`.
 
-`make smoke` checks the live APIs against these expectations.
+`make smoke` checks the live APIs against these expectations. GitHub Actions runs it every
+Monday and on every push to `main`: if OVH changes something, the failed workflow tells you
+before your scraper does.
+
+## Deploying from GHCR (private repository)
+
+Every push to `main` publishes `ghcr.io/jacopofilonzi/ovh-vps-stocknotifier:latest` for
+`linux/amd64` and `linux/arm64`. The image inherits the repository's visibility, so while the
+repository is private the server must log in once:
+
+1. On GitHub: *Settings → Developer settings → Personal access tokens → Tokens (classic) →
+   Generate new token*, with **only** the `read:packages` scope. At the time of writing the
+   container registry doesn't accept fine-grained tokens.
+2. On the server:
+
+   ```sh
+   docker login ghcr.io -u <your-github-username>   # password: the token
+   ```
+
+   Docker stores the token in `~/.docker/config.json` (encoded, not encrypted): with only
+   `read:packages`, a leaked token can only download your images.
+3. Update with:
+
+   ```sh
+   docker compose pull && docker compose up -d
+   ```
+
+The workflow also deletes untagged images (keeping the latest 5), so replaced `latest` builds
+don't fill the free GHCR storage.
+
+### Releasing a version
+
+1. Bump `version` in `package.json` and commit.
+2. Tag and push: `git tag v1.2.3 && git push --tags`.
+
+The workflow checks the tag matches `package.json` and publishes `1.2.3` and `1.2`. To pin a
+version on the server, use e.g. `ghcr.io/jacopofilonzi/ovh-vps-stocknotifier:1.2` in
+`docker-compose.yaml`.
 
 ## Local development
 
@@ -167,6 +219,12 @@ Locally, data files live in `./temp` instead of `/data` (see `DATA_DIR`).
 | `make check` | Type-check and test, run before committing |
 | `make smoke` | Check the live OVH APIs still match this version |
 | `make clean` | Delete the local data directory |
+| `make docker-build` | Build the Docker image from this checkout |
+| `make docker-up` | Start the scraper in the development container (data in `./data`) |
+| `make docker-tui` | Open the TUI in the development container |
+
+The `docker-*` targets use `docker-compose.dev.yaml`, which builds the image locally instead of
+pulling it from GHCR.
 
 ### Environment variables
 
@@ -174,7 +232,7 @@ Locally, data files live in `./temp` instead of `/data` (see `DATA_DIR`).
 | --- | --- | --- |
 | `DATA_DIR` | `./data` (`/data` in Docker, `./temp` with make) | Directory of `config.json` and `state.json` |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn` or `error` |
-| `TZ` | system | Time zone used in logs and notifications |
+| `TZ` | system (`Europe/Rome` in the image) | Time zone used in logs and notifications |
 
 ## Disclaimer
 
