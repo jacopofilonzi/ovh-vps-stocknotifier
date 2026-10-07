@@ -33,6 +33,7 @@ export type HealthEvent = {
 
 export type NotifierHealthEvent = {
   kind: "notifier";
+  id: string;
   name: string;
   failing: boolean;
   error?: string;

@@ -3,6 +3,7 @@ import path from "node:path";
 import type { Config } from "../config/schema.ts";
 import { loadConfig } from "../config/store.ts";
 import type { AppEvent } from "../events.ts";
+import { markReported, updateNotifierHealth } from "../notifiers/health.ts";
 import { dispatch } from "../notifiers/index.ts";
 import type { Catalog } from "../ovh/catalog.ts";
 import { getSubsidiary } from "../ovh/subsidiaries.ts";
@@ -143,16 +144,18 @@ async function check(
   }
 
   if (events.length > 0) {
-    const result = await dispatch(config, {
-      events,
-      subsidiary: config.subsidiary,
-      orderUrl: getSubsidiary(config.subsidiary).orderUrl,
-    });
-    if (result.attempted > 0 && result.delivered === 0) {
+    const base = { subsidiary: config.subsidiary, orderUrl: getSubsidiary(config.subsidiary).orderUrl };
+    const result = await dispatch(config, { ...base, events });
+    if (result.attempted > 0 && result.delivered.length === 0) {
       // Nobody got the news: keep the old plans and stock so the same changes are notified next tick.
       log.warn("no notifier could deliver the changes: they'll be retried on the next check");
       state.plans = previous.plans;
       state.stock = previous.stock;
+    }
+    const notifierEvents = updateNotifierHealth(state, config, result, now);
+    if (notifierEvents.length > 0 && result.delivered.length > 0) {
+      const report = await dispatch(config, { ...base, events: notifierEvents }, new Set(result.delivered));
+      if (report.delivered.length > 0) markReported(state, notifierEvents);
     }
   }
 

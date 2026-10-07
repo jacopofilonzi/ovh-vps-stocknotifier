@@ -3,7 +3,7 @@
 Watches the stock of OVHcloud VPS plans and notifies you when the plans you care about become
 available (or run out again) in the datacenters you choose.
 
-> **Work in progress.** The scraper works (changes are logged); notifiers, TUI and Docker
+> **Work in progress.** The scraper and the notifiers work; the TUI and the Docker
 > images are being built. This README grows with them.
 
 ## What it watches
@@ -21,6 +21,49 @@ Prices, currency and VAT follow the OVH subsidiary you choose:
 IT, FR, DE, ES, GB, IE, NL, PL, PT, MA, SN, TN, CA, QC, AU, SG, IN, ASIA, WE, WS, US.
 
 The US subsidiary has its own plan codes and datacenters.
+
+## Notifiers
+
+You can configure any number of notifiers, of any type, and disable them without deleting them.
+
+| Type | What you need |
+| --- | --- |
+| **Telegram** | A bot token from [@BotFather](https://t.me/BotFather) and the chat id to write to. Send a message to your bot, then open `https://api.telegram.org/bot<token>/getUpdates`: the chat id is in `message.chat.id` (negative for groups). |
+| **Discord** | A channel webhook URL: *Channel settings → Integrations → Webhooks → New webhook → Copy URL*. Every change is shown as an embed. |
+| **Custom webhook** | A URL, the method (`POST` or `PUT`) and optional headers (e.g. for authentication). The body is described below. |
+| **Gotify** | The server URL and an application token (*Apps → Create application*), plus the message priority (0-10). |
+| **ntfy** | The server URL (`https://ntfy.sh` or your own), the topic, an optional access token, and the priority (1-5). |
+
+If a notifier fails (e.g. a revoked token), the error is logged and reported once on the other
+notifiers that work, and again when it recovers.
+
+### Custom webhook body
+
+```jsonc
+{
+  "title": "🟢 VPS-2 2027 available in Milano (IT)",
+  "text": "🟢 VPS-2 2027 (4 vCore, 8 GB, €8.49 + VAT (€10.36)) available in Milano (IT) (Linux)\nOrder: https://www.ovhcloud.com/it/vps/",
+  "test": false,
+  "subsidiary": "IT",
+  "orderUrl": "https://www.ovhcloud.com/it/vps/",
+  "timestamp": "2026-10-07T11:40:00.000Z",
+  "version": "1.0.0",
+  "events": [
+    {
+      "kind": "stock",                   // stock | orderability | health | notifier
+      "status": "available",             // stock: available | out-of-stock
+      "plan": { "planCode": "vps-2027-model2", "invoiceName": "VPS-2 2027", "vCore": 4, "ramGb": 8, "price": "€8.49 + VAT (€10.36)" },
+      "datacenter": { "code": "EU-SOUTH-MIL", "label": "Milano (IT)" },
+      "os": "linux",
+      "message": "VPS-2 2027 (4 vCore, 8 GB, €8.49 + VAT (€10.36)) available in Milano (IT) (Linux)"
+    }
+  ]
+}
+```
+
+Other event kinds: `orderability` (`orderable`, `plan`), `health` (`status`: `degraded`,
+`recovered`, `halted` or `state-reset`, `detail`) and `notifier` (`id`, `name`, `failing`, `error`).
+Every event has a ready-made `message`.
 
 ## How it works
 
