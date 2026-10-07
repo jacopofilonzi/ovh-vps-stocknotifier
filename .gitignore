@@ -1,0 +1,8 @@
+node_modules/
+
+# Runtime data: contains notifier tokens
+data/
+temp/
+
+*.log
+.DS_Store

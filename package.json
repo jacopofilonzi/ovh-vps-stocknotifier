@@ -1,0 +1,27 @@
+{
+  "name": "ovh-vps-stocknotifier",
+  "version": "0.1.0",
+  "description": "Watches OVHcloud VPS stock and notifies you when a plan becomes available",
+  "private": true,
+  "type": "module",
+  "license": "UNLICENSED",
+  "repository": "github:jacopofilonzi/ovh-vps-stocknotifier",
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "scraper": "node src/main.ts scraper",
+    "tui": "node src/main.ts tui",
+    "test": "node --test \"src/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^8.7.3",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.1",
+    "typescript": "^7.0.2"
+  }
+}

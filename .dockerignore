@@ -1,0 +1,10 @@
+node_modules
+data
+temp
+scripts
+.git
+.github
+*.md
+Makefile
+docker-compose*.yaml
+Dockerfile
