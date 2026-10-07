@@ -3,7 +3,7 @@
 Watches the stock of OVHcloud VPS plans and notifies you when the plans you care about become
 available (or run out again) in the datacenters you choose.
 
-> **Work in progress.** The OVH API layer is done; the scraper, notifiers, TUI and Docker
+> **Work in progress.** The scraper works (changes are logged); notifiers, TUI and Docker
 > images are being built. This README grows with them.
 
 ## What it watches
@@ -22,6 +22,29 @@ IT, FR, DE, ES, GB, IE, NL, PL, PT, MA, SN, TN, CA, QC, AU, SG, IN, ASIA, WE, WS
 
 The US subsidiary has its own plan codes and datacenters.
 
+## How it works
+
+- **Schedule.** The first check runs at startup, the next one `interval` after the previous
+  one ends (±10% jitter), so checks never overlap. `config.json` is re-read before every check,
+  and a change while waiting reschedules the next check right away.
+- **Waiting for a configuration.** Without a usable `config.json` (missing, or no plan or
+  datacenter selected) the scraper waits for one instead of exiting: you can start it first and
+  configure it afterwards.
+- **First run.** Plans and stock seen for the first time are recorded without notifications,
+  except a plan that is already available, or one that is already withdrawn. The same applies to
+  plans and datacenters added later.
+- **Notifications.** Only changes are notified: available, out of stock, withdrawn from sale,
+  orderable again. All the changes of one check go into a single notification. If no notifier
+  can deliver it, the changes are retried on the next check.
+- **Errors.** A failed request leaves the stored state untouched, so a network error never
+  becomes a false "out of stock". After failures the next check is delayed exponentially (up to
+  30 minutes), and you're notified if monitoring stays degraded for 3 checks in a row.
+- **Data files.** `config.json` is written only by the TUI, `state.json` only by the scraper,
+  always atomically. A corrupted `state.json` is moved aside and rebuilt (you're notified); one
+  written by an incompatible version is discarded.
+- **Healthcheck.** `node src/main.ts healthcheck` fails when the scraper is stuck, halted, or
+  hasn't completed a check for more than an hour (or 6 intervals).
+
 ## How it deals with API changes
 
 OVH's public order APIs aren't documented as stable, so every response is validated against
@@ -29,8 +52,13 @@ the fields this app actually uses:
 
 - Changes to fields the app doesn't use are ignored.
 - Changes to fields it relies on (plan codes, orderability, datacenters, stock statuses) make the
-  response *incompatible*: monitoring stops instead of sending wrong notifications, and you're
-  told to update to a newer version.
+  response *incompatible*. To rule out a temporary glitch, the check is retried twice, 10 and 20
+  minutes later (or more, with longer intervals). If the same problem persists, monitoring stops
+  instead of sending wrong notifications, and you're told to update to a newer version.
+- A stopped scraper stays up (so Docker doesn't restart it in a loop) and reports itself as
+  unhealthy. It tries again once when restarted or when `config.json` changes, without notifying
+  the same problem twice, and resumes normally when a new version is deployed.
+- Specs and prices are only displayed: if they can't be read they're shown as `n/a`.
 
 `make smoke` checks the live APIs against these expectations.
 
@@ -49,6 +77,11 @@ Locally, data files live in `./temp` instead of `/data` (see `DATA_DIR`).
 | --- | --- |
 | `make help` | List the available targets |
 | `make install` | Install dependencies |
+| `make scraper` | Run the scraper in the foreground (Ctrl+C to stop) |
+| `make dev` | Run the scraper, restarting it when a file in `src/` changes |
+| `make once` | Run a single check and exit |
+| `make status` | Print the stored stock status |
+| `make reset-state` | Delete `state.json`, to simulate a first run (keeps the config) |
 | `make test` | Run the unit tests |
 | `make typecheck` | Type-check the code (node runs `.ts` files without checking types) |
 | `make check` | Type-check and test, run before committing |

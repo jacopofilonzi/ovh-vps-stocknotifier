@@ -5,13 +5,28 @@
 export DATA_DIR ?= ./temp
 
 .DEFAULT_GOAL := help
-.PHONY: help install test typecheck check smoke clean
+.PHONY: help install scraper dev once status reset-state test typecheck check smoke clean
 
 help: ## List the available targets
 	@node -e "for (const l of require('fs').readFileSync('Makefile','utf8').split('\n')) { const m = l.match(/^([a-z-]+):.*## (.*)/); if (m) console.log('  ' + m[1].padEnd(14) + m[2]); }"
 
 install: ## Install dependencies
 	pnpm install --frozen-lockfile
+
+scraper: ## Run the scraper in the foreground (Ctrl+C to stop)
+	node src/main.ts scraper
+
+dev: ## Run the scraper, restarting it when a file in src/ changes
+	node --watch-path=src src/main.ts scraper
+
+once: ## Run a single check and exit
+	node src/main.ts scraper --once
+
+status: ## Print the stored stock status
+	node src/main.ts status
+
+reset-state: ## Delete state.json, to simulate a first run (keeps the config)
+	node -e "require('fs').rmSync(require('path').join(process.env.DATA_DIR, 'state.json'), { force: true })"
 
 test: ## Run the unit tests
 	pnpm test
