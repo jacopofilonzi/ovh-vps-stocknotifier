@@ -3,7 +3,7 @@ import type { Config } from "../config/schema.ts";
 import type { Catalog, CatalogPlan } from "../ovh/catalog.ts";
 import { formatMonthlyPrice } from "../ovh/price.ts";
 import { formatColumns } from "../shared/table.ts";
-import { ask, BACK, dim, yellow, type Back } from "./prompt.ts";
+import { ask, BACK, dim, pause, yellow, type Back } from "./prompt.ts";
 
 /**
  * Plans step: the plans on sale in at least one selected datacenter, by price.
@@ -16,7 +16,8 @@ export async function editPlans(config: Config, catalog: Catalog): Promise<Confi
   const withdrawn = config.plans.filter((code) => !onSale.some((p) => p.planCode === code));
 
   if (onSale.length === 0 && withdrawn.length === 0) {
-    console.log(yellow("No plan is on sale in the selected datacenters: pick other datacenters first."));
+    // Paused: the caller clears the screen right after going back.
+    await pause([yellow("No plan is on sale in the selected datacenters: pick other datacenters first.")]);
     return BACK;
   }
 

@@ -1,6 +1,6 @@
 import { checkbox, number } from "@inquirer/prompts";
 import { MIN_INTERVAL_SECONDS, type Config } from "../config/schema.ts";
-import { ask, BACK, yellow, type Back } from "./prompt.ts";
+import { ask, BACK, dim, type Back } from "./prompt.ts";
 
 export async function editSystems(config: Config): Promise<Config | Back> {
   const os = await ask(checkbox<"linux" | "windows">, {
@@ -17,7 +17,7 @@ export async function editSystems(config: Config): Promise<Config | Back> {
 
 export async function editInterval(config: Config): Promise<Config | Back> {
   const minutes = await ask(number, {
-    message: "Check interval, in minutes",
+    message: `Check interval, in minutes ${dim("(under 5 may get you rate-limited by OVH)")}`,
     default: config.intervalSeconds / 60,
     min: MIN_INTERVAL_SECONDS / 60,
     max: 24 * 60,
@@ -25,7 +25,6 @@ export async function editInterval(config: Config): Promise<Config | Back> {
     required: true,
   });
   if (typeof minutes !== "number") return BACK;
-  if (minutes < 5) console.log(yellow("Intervals under 5 minutes may get you rate-limited by OVH."));
   return { ...config, intervalSeconds: Math.round(minutes * 60) };
 }
 
