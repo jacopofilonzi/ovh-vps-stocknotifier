@@ -4,7 +4,7 @@
   "description": "Watches OVHcloud VPS stock and notifies you when a plan becomes available",
   "private": true,
   "type": "module",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "repository": "github:jacopofilonzi/ovh-vps-stocknotifier",
   "engines": {
     "node": ">=24"

@@ -14,9 +14,6 @@ docker compose run --rm notifier tui      # configure it: it starts checking wit
 docker compose logs -f                    # follow what it does
 ```
 
-The image is private as long as the repository is: see
-[Deploying from GHCR](#deploying-from-ghcr-private-repository) to log in first.
-
 On Linux, `data/` must be writable by the container user (uid 1000):
 `sudo chown 1000:1000 data` if you created it as another user. The scraper tells you if it isn't.
 
@@ -170,28 +167,14 @@ the fields this app actually uses:
 GitHub Actions workflow, run manually for now (*Actions → OVH API smoke test → Run workflow*);
 `.github/workflows/smoke.yml` shows how to schedule it.
 
-## Deploying from GHCR (private repository)
+## Docker image
 
 Every push to `main` publishes `ghcr.io/jacopofilonzi/ovh-vps-stocknotifier:latest` for
-`linux/amd64` and `linux/arm64`. The image inherits the repository's visibility, so while the
-repository is private the server must log in once:
+`linux/amd64` and `linux/arm64`. To update:
 
-1. On GitHub: *Settings → Developer settings → Personal access tokens → Tokens (classic) →
-   Generate new token*, with **only** the `read:packages` scope. At the time of writing the
-   container registry doesn't accept fine-grained tokens.
-2. On the server:
-
-   ```sh
-   docker login ghcr.io -u <your-github-username>   # password: the token
-   ```
-
-   Docker stores the token in `~/.docker/config.json` (encoded, not encrypted): with only
-   `read:packages`, a leaked token can only download your images.
-3. Update with:
-
-   ```sh
-   docker compose pull && docker compose up -d
-   ```
+```sh
+docker compose pull && docker compose up -d
+```
 
 The workflow also deletes untagged images (keeping the latest 5), so replaced `latest` builds
 don't fill the free GHCR storage.
@@ -259,3 +242,7 @@ pulling it from GHCR.
   anything and is not meant for automated ordering or high-volume requests.
 - The software is provided "as is", without warranty of any kind. The author is not liable for
   missed, late or wrong notifications.
+
+## License
+
+[MIT](LICENSE)
