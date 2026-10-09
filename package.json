@@ -1,6 +1,6 @@
 {
   "name": "ovh-vps-stocknotifier",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Watches OVHcloud VPS stock and notifies you when a plan becomes available",
   "private": true,
   "type": "module",
