@@ -1,10 +1,8 @@
 import type { Config } from "../config/schema.ts";
-import type { AppEvent, PlanInfo } from "../events.ts";
-import { fetchPlanStock } from "../ovh/availability.ts";
+import { planInfo, unknownPlanInfo, type AppEvent } from "../events.ts";
+import { fetchWatchedStock } from "../ovh/availability.ts";
 import { fetchCatalog, type Catalog, type CatalogPlan } from "../ovh/catalog.ts";
 import { datacenterLabel, resolveDatacenter } from "../ovh/datacenters.ts";
-import { formatMonthlyPrice } from "../ovh/price.ts";
-import { mapSettled } from "../shared/concurrency.ts";
 import { ApiError } from "../shared/http.ts";
 import { log } from "../shared/log.ts";
 import { pruneState, updateOrderability, updateStock } from "../state/diff.ts";
@@ -12,7 +10,6 @@ import { stockKey, type State } from "../state/schema.ts";
 
 /** The catalog is 6+ MB: refresh it at most this often (or every tick with longer intervals). */
 const CATALOG_MAX_AGE_MS = 30 * 60_000;
-const MAX_PARALLEL_REQUESTS = 4;
 
 export type TickOutcome = {
   events: AppEvent[];
@@ -57,22 +54,15 @@ export async function runTick(config: Config, state: State, cached: Catalog | nu
   const orderable: CatalogPlan[] = [];
   for (const planCode of config.plans) {
     const plan = catalog.plans.get(planCode);
-    const info = plan ? planInfo(plan, catalog) : (state.plans[planCode]?.info ?? unknownPlan(planCode));
+    const info = plan ? planInfo(plan, catalog) : (state.plans[planCode]?.info ?? unknownPlanInfo(planCode));
     const event = updateOrderability(state, info, plan?.orderable ?? false, now);
     if (event) events.push(event);
     if (plan?.orderable) orderable.push(plan);
   }
 
   // 3. Stock of the orderable plans in the monitored datacenters.
-  const checks = orderable
-    .map((plan) => ({ plan, datacenters: config.datacenters.filter((dc) => plan.datacenters.includes(dc)) }))
-    .filter((check) => check.datacenters.length > 0);
-  const results = await mapSettled(checks, MAX_PARALLEL_REQUESTS, ({ plan, datacenters }) =>
-    fetchPlanStock(config.subsidiary, plan.planCode, datacenters, config.os),
-  );
-
-  for (const [i, result] of results.entries()) {
-    const { plan, datacenters } = checks[i]!;
+  const checks = await fetchWatchedStock(config.subsidiary, orderable, config.datacenters, config.os);
+  for (const { plan, datacenters, result } of checks) {
     if (result.status === "rejected") {
       if (isIncompatible(result.reason)) return { events, error: result.reason as Error, catalog };
       error ??= result.reason as Error;
@@ -104,20 +94,6 @@ export async function runTick(config: Config, state: State, cached: Catalog | nu
   );
   state.lastCheck = now.toISOString();
   return { events, error, catalog };
-}
-
-export function planInfo(plan: CatalogPlan, catalog: Catalog): PlanInfo {
-  return {
-    planCode: plan.planCode,
-    invoiceName: plan.invoiceName,
-    vCore: plan.vCore,
-    ramGb: plan.ramGb,
-    price: formatMonthlyPrice(plan, catalog),
-  };
-}
-
-function unknownPlan(planCode: string): PlanInfo {
-  return { planCode, invoiceName: planCode, vCore: null, ramGb: null, price: "n/a" };
 }
 
 export function isIncompatible(err: unknown): err is ApiError {

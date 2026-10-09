@@ -1,4 +1,6 @@
 import type { OperatingSystem, StockStatus } from "./ovh/availability.ts";
+import type { Catalog, CatalogPlan } from "./ovh/catalog.ts";
+import { formatMonthlyPrice } from "./ovh/price.ts";
 
 /** What notifications show about a plan, resolved from the catalog when the event happens. */
 export type PlanInfo = {
@@ -9,6 +11,21 @@ export type PlanInfo = {
   /** Formatted monthly price, e.g. "€4.49 + VAT (€5.48)". */
   price: string;
 };
+
+export function planInfo(plan: CatalogPlan, catalog: Catalog): PlanInfo {
+  return {
+    planCode: plan.planCode,
+    invoiceName: plan.invoiceName,
+    vCore: plan.vCore,
+    ramGb: plan.ramGb,
+    price: formatMonthlyPrice(plan, catalog),
+  };
+}
+
+/** For a watched plan that is no longer in the catalog. */
+export function unknownPlanInfo(planCode: string): PlanInfo {
+  return { planCode, invoiceName: planCode, vCore: null, ramGb: null, price: "n/a" };
+}
 
 export type StockEvent = {
   kind: "stock";

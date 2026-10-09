@@ -1,4 +1,6 @@
+import { mapSettled } from "../shared/concurrency.ts";
 import { ApiError, fetchJson, parseOrIncompatible } from "../shared/http.ts";
+import type { CatalogPlan } from "./catalog.ts";
 import { availabilitySchema } from "./schemas.ts";
 import { getSubsidiary } from "./subsidiaries.ts";
 
@@ -11,6 +13,35 @@ const KNOWN_STATUSES: readonly string[] = ["available", "out-of-stock"] satisfie
 
 /** Stock of one plan: datacenter code -> OS -> status. Only datacenters returned by OVH are present. */
 export type PlanStock = Map<string, Partial<Record<OperatingSystem, StockStatus>>>;
+
+const MAX_PARALLEL_REQUESTS = 4;
+
+export type WatchedStock = {
+  plan: CatalogPlan;
+  /** The watched datacenters the plan is offered in. */
+  datacenters: string[];
+  result: PromiseSettledResult<PlanStock>;
+};
+
+/**
+ * Stock of `plans` in the watched `datacenters` each one is offered in, in the order of `plans`,
+ * with at most MAX_PARALLEL_REQUESTS requests at once. Plans offered in none of them are skipped.
+ * Failures are returned, not thrown: the scraper and the TUI handle them differently.
+ */
+export async function fetchWatchedStock(
+  subsidiaryCode: string,
+  plans: readonly CatalogPlan[],
+  datacenters: readonly string[],
+  systems: readonly OperatingSystem[],
+): Promise<WatchedStock[]> {
+  const checks = plans
+    .map((plan) => ({ plan, datacenters: datacenters.filter((dc) => plan.datacenters.includes(dc)) }))
+    .filter((check) => check.datacenters.length > 0);
+  const results = await mapSettled(checks, MAX_PARALLEL_REQUESTS, ({ plan, datacenters }) =>
+    fetchPlanStock(subsidiaryCode, plan.planCode, datacenters, systems),
+  );
+  return checks.map((check, i) => ({ ...check, result: results[i]! }));
+}
 
 /**
  * Fetches the stock of `planCode`, keeping only `datacenters` and `systems`.

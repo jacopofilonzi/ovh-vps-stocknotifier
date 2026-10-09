@@ -1,12 +1,10 @@
 import type { Config, NotifierConfig } from "../config/schema.ts";
-import type { AppEvent, Notification } from "../events.ts";
+import { planInfo, unknownPlanInfo, type AppEvent, type Notification } from "../events.ts";
 import { sendWith } from "../notifiers/index.ts";
-import { fetchPlanStock } from "../ovh/availability.ts";
+import { fetchWatchedStock } from "../ovh/availability.ts";
 import type { Catalog, CatalogPlan } from "../ovh/catalog.ts";
 import { datacenterLabel, resolveDatacenter } from "../ovh/datacenters.ts";
 import { getSubsidiary } from "../ovh/subsidiaries.ts";
-import { mapSettled } from "../shared/concurrency.ts";
-import { planInfo } from "../scraper/tick.ts";
 import { green, red, withSpinner } from "./prompt.ts";
 
 /** Sends a simple "it works" notification. */
@@ -30,25 +28,20 @@ export async function sendLivePreview(config: Config, catalog: Catalog, notifier
 /** Current stock of the watched plans, as events. Read-only: nothing is stored or notified. */
 export async function liveEvents(config: Config, catalog: Catalog): Promise<AppEvent[]> {
   const events: AppEvent[] = [];
-  const checks: { plan: CatalogPlan; datacenters: string[] }[] = [];
+  const orderable: CatalogPlan[] = [];
   for (const planCode of config.plans) {
     const plan = catalog.plans.get(planCode);
-    if (!plan?.orderable) {
-      const info = plan ? planInfo(plan, catalog) : { planCode, invoiceName: planCode, vCore: null, ramGb: null, price: "n/a" };
-      events.push({ kind: "orderability", orderable: false, plan: info });
-      continue;
+    if (plan?.orderable) {
+      orderable.push(plan);
+    } else {
+      events.push({ kind: "orderability", orderable: false, plan: plan ? planInfo(plan, catalog) : unknownPlanInfo(planCode) });
     }
-    const datacenters = config.datacenters.filter((dc) => plan.datacenters.includes(dc));
-    if (datacenters.length) checks.push({ plan, datacenters });
   }
-  const results = await mapSettled(checks, 4, ({ plan, datacenters }) =>
-    fetchPlanStock(config.subsidiary, plan.planCode, datacenters, config.os),
-  );
-  results.forEach((result, i) => {
-    const { plan, datacenters } = checks[i]!;
+  const checks = await fetchWatchedStock(config.subsidiary, orderable, config.datacenters, config.os);
+  for (const { plan, datacenters, result } of checks) {
     if (result.status === "rejected") {
       console.log(red(`Stock of ${plan.planCode} unavailable: ${(result.reason as Error).message}`));
-      return;
+      continue;
     }
     for (const dc of datacenters) {
       for (const os of config.os) {
@@ -58,7 +51,7 @@ export async function liveEvents(config: Config, catalog: Catalog): Promise<AppE
         events.push({ kind: "stock", status, plan: planInfo(plan, catalog), datacenter: { code: dc, label }, os });
       }
     }
-  });
+  }
   return events;
 }
 
