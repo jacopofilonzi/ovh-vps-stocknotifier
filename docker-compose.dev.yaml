@@ -7,7 +7,7 @@ services:
     image: ovh-vps-stocknotifier:dev
     restart: unless-stopped
     environment:
-      TZ: Europe/Rome
-      LOG_LEVEL: debug
+      TZ: ${TZ:-Europe/Rome}
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
     volumes:
       - ./data:/data

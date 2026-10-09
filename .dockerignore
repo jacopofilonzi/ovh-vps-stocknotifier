@@ -9,3 +9,4 @@ src/**/*.test.ts
 Makefile
 docker-compose*.yaml
 Dockerfile
+.env

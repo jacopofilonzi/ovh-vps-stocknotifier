@@ -230,6 +230,10 @@ pulling it from GHCR.
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn` or `error` |
 | `TZ` | system (`Europe/Rome` in the image) | Time zone used in logs and notifications |
 
+To change them, copy [`.env.example`](.env.example) to `.env`: `docker compose` and the `make`
+targets read it. With `make`, `DATA_DIR` is always `./temp` unless passed on the command line
+(`make tui DATA_DIR=...`).
+
 ## Disclaimer
 
 - This project is **not affiliated with, endorsed or supported by OVHcloud**. "OVHcloud" is a

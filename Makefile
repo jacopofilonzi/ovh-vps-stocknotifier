@@ -4,6 +4,10 @@
 # Local data directory (Docker uses /data). Override with: make <target> DATA_DIR=...
 export DATA_DIR ?= ./temp
 
+# Node reads .env (see .env.example) when it exists. It never overrides variables already set,
+# so DATA_DIR above wins over the one in .env.
+NODE := node --env-file-if-exists=.env
+
 .DEFAULT_GOAL := help
 .PHONY: help install tui scraper dev once check-now status reset-state test typecheck check smoke clean docker-build docker-up docker-tui
 
@@ -14,22 +18,22 @@ install: ## Install dependencies
 	pnpm install --frozen-lockfile
 
 tui: ## Open the configuration TUI
-	node src/main.ts tui
+	$(NODE) src/main.ts tui
 
 scraper: ## Run the scraper in the foreground (Ctrl+C to stop)
-	node src/main.ts scraper
+	$(NODE) src/main.ts scraper
 
 dev: ## Run the scraper, restarting it when a file in src/ changes
-	node --watch-path=src src/main.ts scraper
+	$(NODE) --watch-path=src src/main.ts scraper
 
 once: ## Run a single check and exit
-	node src/main.ts scraper --once
+	$(NODE) src/main.ts scraper --once
 
 check-now: ## Ask the running scraper (make scraper) for an immediate check
-	node src/main.ts check-now
+	$(NODE) src/main.ts check-now
 
 status: ## Print the stored stock status
-	node src/main.ts status
+	$(NODE) src/main.ts status
 
 reset-state: ## Delete state.json, to simulate a first run (keeps the config)
 	node -e "require('fs').rmSync(require('path').join(process.env.DATA_DIR, 'state.json'), { force: true })"
@@ -43,7 +47,7 @@ typecheck: ## Type-check the code (node runs .ts files without checking types)
 check: typecheck test ## Type-check and test, run before committing
 
 smoke: ## Check the live OVH APIs still match this version
-	node src/main.ts smoke
+	$(NODE) src/main.ts smoke
 
 clean: ## Delete the local data directory
 	node -e "require('fs').rmSync(process.env.DATA_DIR, { recursive: true, force: true })"

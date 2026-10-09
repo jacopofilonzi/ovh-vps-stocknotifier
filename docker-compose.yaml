@@ -7,7 +7,7 @@ services:
     image: ghcr.io/jacopofilonzi/ovh-vps-stocknotifier:latest
     restart: unless-stopped
     environment:
-      TZ: Europe/Rome
-      LOG_LEVEL: info
+      TZ: ${TZ:-Europe/Rome}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
     volumes:
       - ./data:/data

@@ -6,3 +6,6 @@ temp/
 
 *.log
 .DS_Store
+
+# Local overrides of .env.example
+.env
