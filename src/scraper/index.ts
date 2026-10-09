@@ -1,5 +1,6 @@
 import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { env, LOG_LEVELS } from "../config/env.ts";
 import type { Config } from "../config/schema.ts";
 import { loadConfig } from "../config/store.ts";
 import type { AppEvent } from "../events.ts";
@@ -48,6 +49,9 @@ export async function runScraper({ once = false } = {}): Promise<number> {
   }
 
   log.info(`${APP_NAME} ${APP_VERSION} started, data in ${DATA_DIR}`);
+  if (env.invalidLogLevel !== undefined) {
+    log.warn(`unknown LOG_LEVEL "${env.invalidLogLevel}": using info (valid: ${LOG_LEVELS.join(", ")})`);
+  }
   const heartbeat = setInterval(() => {
     state.heartbeat = new Date().toISOString();
     saveState(state).catch((err) => log.error(`saving state failed: ${err.message}`));

@@ -1,8 +1,8 @@
-const LEVELS = { debug: 10, info: 20, warn: 30, error: 40 } as const;
-type Level = keyof typeof LEVELS;
+import { env, type LogLevel as Level } from "../config/env.ts";
 
-const configured = (process.env.LOG_LEVEL ?? "info").toLowerCase();
-const threshold = LEVELS[configured as Level] ?? LEVELS.info;
+const LEVELS: Record<Level, number> = { debug: 10, info: 20, warn: 30, error: 40 };
+
+const threshold = LEVELS[env.logLevel];
 
 function write(level: Level, message: string, ...details: unknown[]) {
   if (LEVELS[level] < threshold) return;
