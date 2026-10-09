@@ -18,6 +18,14 @@ import { updateHealth } from "./health.ts";
 import { consumeCheckRequest, nextDelayMs, waitFor } from "./schedule.ts";
 import { isIncompatible, runTick } from "./tick.ts";
 
+// The scraper process: the only one that checks OVH for real, notifies and writes state.json.
+// It never exits on its own. Without a usable config.json it waits for one ("waiting-config");
+// when halted it stays up (so Docker doesn't restart it in a loop) and makes one attempt at
+// startup, on a config change or on a check request. The heartbeat in state.json tells the TUI
+// and the healthcheck it's alive; "stopped" is written on a clean shutdown.
+// Each check works on a copy of the state: an incompatible response discards the copy, and if no
+// notifier delivers, plans and stock are rolled back so the same changes are notified next time.
+
 const TUI_HINT = "run the TUI to configure it (docker compose run --rm notifier tui, or make tui)";
 
 type Usable = { config: Config } | { config?: undefined; level: "info" | "warn" | "error"; reason: string };

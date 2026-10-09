@@ -8,6 +8,12 @@ import { log } from "../shared/log.ts";
 import { pruneState, updateOrderability, updateStock } from "../state/diff.ts";
 import { stockKey, type State } from "../state/schema.ts";
 
+// One check: 1. the catalog (cached for CATALOG_MAX_AGE_MS, the old copy is kept on transient
+// errors), 2. orderability of the watched plans, 3. stock of the orderable ones in the watched
+// datacenters. The tick only updates the state it's given and returns the events: notifying and
+// saving are up to the caller. Transient errors leave the affected stock untouched (a network
+// error never becomes "out of stock"); an incompatible response stops the tick.
+
 /** The catalog is 6+ MB: refresh it at most this often (or every tick with longer intervals). */
 const CATALOG_MAX_AGE_MS = 30 * 60_000;
 

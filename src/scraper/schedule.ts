@@ -4,6 +4,10 @@ import { CHECK_NOW_PATH, CONFIG_PATH } from "../shared/paths.ts";
 import type { State } from "../state/schema.ts";
 import { isConfirming } from "./health.ts";
 
+// When the next check runs. The scraper and the TUI only talk through files in DATA_DIR:
+// config.json (written by the TUI) and check-now (created by the TUI, removed here once a check
+// has served it). Both are polled: see waitFor.
+
 const MINUTE = 60_000;
 /** Ceiling of the backoff after failed ticks. */
 export const MAX_BACKOFF_MS = 30 * MINUTE;

@@ -5,6 +5,10 @@ import { STATE_PATH } from "../shared/paths.ts";
 import { APP_VERSION } from "../shared/version.ts";
 import { STATE_SCHEMA_VERSION, freshState, stateSchema, type State } from "./schema.ts";
 
+// state.json belongs to the scraper and can always be rebuilt (unlike config.json): loadState moves
+// a corrupted file aside and discards one with another stateSchemaVersion. Writes are atomic and
+// queued. The TUI, the status command and the healthcheck only read it, with peekState.
+
 export type StateLoadResult = {
   state: State;
   /** Set when a corrupted state.json was moved aside: path of the backup and the reason. */
