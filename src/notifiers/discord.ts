@@ -3,7 +3,7 @@ import type { discordSchema } from "../config/schema.ts";
 import type { AppEvent, Notification } from "../events.ts";
 import { APP_NAME, APP_VERSION, REPO_URL } from "../shared/version.ts";
 import { describeEvent, eventEmoji, notificationTitle, sortEvents } from "./format.ts";
-import { sendJson } from "./http.ts";
+import { mask, sendJson } from "./http.ts";
 
 type DiscordConfig = z.infer<typeof discordSchema>;
 
@@ -91,4 +91,4 @@ function toEmbed(event: AppEvent, notification: Notification): Embed {
   }
 }
 
-export const summary = (config: DiscordConfig) => `webhook …${config.webhookUrl.slice(-6)}`;
+export const summary = (config: DiscordConfig) => `webhook ${mask(config.webhookUrl)}`;
