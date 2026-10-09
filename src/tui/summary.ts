@@ -1,4 +1,5 @@
 import type { Config } from "../config/schema.ts";
+import { OS_LABEL } from "../ovh/availability.ts";
 import type { Catalog } from "../ovh/catalog.ts";
 import { datacenterLabel, resolveDatacenter } from "../ovh/datacenters.ts";
 import { getSubsidiary } from "../ovh/subsidiaries.ts";
@@ -21,7 +22,7 @@ export function describe(config: Config, catalog: Catalog | null, state: State |
         .map((dc) => catalog?.datacenters.get(dc) ?? null)
         .map((dc, i) => (dc ? datacenterLabel(dc) : (state?.datacenterLabels[config.datacenters[i]!] ?? datacenterLabel(resolveDatacenter(config.datacenters[i]!)))))
         .join(", ") || yellow("none"),
-    os: config.os.map((os) => (os === "linux" ? "Linux" : "Windows")).join(", "),
+    os: config.os.map((os) => OS_LABEL[os]).join(", "),
     plans:
       config.plans
         .map((p) => {

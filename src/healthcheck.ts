@@ -1,7 +1,11 @@
 import { peekState } from "./state/store.ts";
 
 const MINUTE = 60_000;
-/** The scraper writes a heartbeat every minute, even while waiting. */
+/**
+ * The scraper refreshes its heartbeat every 30s (HEARTBEAT_INTERVAL_MS), even while waiting.
+ * Allows a few missed beats before Docker reports the container unhealthy (the TUI's
+ * "not responding" uses the shorter HEARTBEAT_STALE_MS).
+ */
 const HEARTBEAT_MAX_AGE_MS = 3 * MINUTE;
 
 /**

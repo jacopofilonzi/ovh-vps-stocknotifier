@@ -1,12 +1,11 @@
 import { loadConfig } from "./config/store.ts";
+import { OS_LABEL, type OperatingSystem } from "./ovh/availability.ts";
 import { formatColumns } from "./shared/table.ts";
 import { STATE_PATH } from "./shared/paths.ts";
 import { formatTime } from "./shared/time.ts";
 import { describeLiveness, liveness } from "./state/liveness.ts";
 import { stockKey, type State } from "./state/schema.ts";
 import { peekState } from "./state/store.ts";
-
-const OS_LABEL = { linux: "Linux", windows: "Windows" } as const;
 
 /** The status table shown by `make status` and in the TUI, from the stored state. */
 export async function statusLines(): Promise<string[]> {
@@ -37,7 +36,7 @@ export async function statusLines(): Promise<string[]> {
   ];
 }
 
-function stockCell(state: State, planCode: string, dc: string, systems: readonly ("linux" | "windows")[]): string {
+function stockCell(state: State, planCode: string, dc: string, systems: readonly OperatingSystem[]): string {
   const parts = systems.flatMap((os) => {
     const stock = state.stock[stockKey(planCode, dc, os)];
     if (!stock) return [];

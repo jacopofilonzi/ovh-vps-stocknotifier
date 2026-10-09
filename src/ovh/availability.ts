@@ -5,6 +5,8 @@ import { getSubsidiary } from "./subsidiaries.ts";
 export type OperatingSystem = "linux" | "windows";
 export type StockStatus = "available" | "out-of-stock";
 
+export const OS_LABEL: Record<OperatingSystem, string> = { linux: "Linux", windows: "Windows" };
+
 const KNOWN_STATUSES: readonly string[] = ["available", "out-of-stock"] satisfies StockStatus[];
 
 /** Stock of one plan: datacenter code -> OS -> status. Only datacenters returned by OVH are present. */

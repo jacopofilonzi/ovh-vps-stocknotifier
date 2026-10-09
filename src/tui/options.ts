@@ -1,13 +1,14 @@
 import { checkbox, number } from "@inquirer/prompts";
 import { MIN_INTERVAL_SECONDS, type Config } from "../config/schema.ts";
+import { OS_LABEL, type OperatingSystem } from "../ovh/availability.ts";
 import { ask, BACK, dim, type Back } from "./prompt.ts";
 
 export async function editSystems(config: Config): Promise<Config | Back> {
-  const os = await ask(checkbox<"linux" | "windows">, {
+  const os = await ask(checkbox<OperatingSystem>, {
     message: "Operating systems to watch (OVH tracks their stock separately)",
     choices: [
-      { name: "Linux", value: "linux", checked: config.os.includes("linux"), description: "Linux distributions and Linux-based panels" },
-      { name: "Windows", value: "windows", checked: config.os.includes("windows"), description: "Windows Server (paid license option)" },
+      { name: OS_LABEL.linux, value: "linux", checked: config.os.includes("linux"), description: "Linux distributions and Linux-based panels" },
+      { name: OS_LABEL.windows, value: "windows", checked: config.os.includes("windows"), description: "Windows Server (paid license option)" },
     ],
     required: true,
   });

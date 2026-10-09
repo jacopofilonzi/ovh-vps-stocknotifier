@@ -1,7 +1,6 @@
 import type { AppEvent, Notification, PlanInfo } from "../events.ts";
+import { OS_LABEL } from "../ovh/availability.ts";
 import { APP_NAME, APP_VERSION, REPO_URL } from "../shared/version.ts";
-
-const OS_LABEL = { linux: "Linux", windows: "Windows" } as const;
 
 export function eventEmoji(event: AppEvent): string {
   switch (event.kind) {

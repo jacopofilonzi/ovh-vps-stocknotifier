@@ -1,6 +1,7 @@
 import type { z } from "zod";
 import type { discordSchema } from "../config/schema.ts";
 import type { AppEvent, Notification } from "../events.ts";
+import { OS_LABEL } from "../ovh/availability.ts";
 import { APP_NAME, APP_VERSION, REPO_URL } from "../shared/version.ts";
 import { describeEvent, eventEmoji, notificationTitle, sortEvents } from "./format.ts";
 import { mask, sendJson } from "./http.ts";
@@ -57,7 +58,7 @@ function toEmbed(event: AppEvent, notification: Notification): Embed {
         color: event.status === "available" ? COLORS.available : COLORS.outOfStock,
         fields: [
           { name: "Datacenter", value: event.datacenter.label, inline: true },
-          { name: "OS", value: event.os === "linux" ? "Linux" : "Windows", inline: true },
+          { name: "OS", value: OS_LABEL[event.os], inline: true },
           { name: "Price/month", value: event.plan.price, inline: true },
           { name: "vCore", value: String(event.plan.vCore ?? "n/a"), inline: true },
           { name: "RAM", value: event.plan.ramGb !== null ? `${event.plan.ramGb} GB` : "n/a", inline: true },

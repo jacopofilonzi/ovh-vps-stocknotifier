@@ -2,6 +2,7 @@ import { confirm } from "@inquirer/prompts";
 import { checkResultLines, requestCheck } from "../check-now.ts";
 import type { Config } from "../config/schema.ts";
 import type { StockEvent } from "../events.ts";
+import { OS_LABEL } from "../ovh/availability.ts";
 import { formatColumns } from "../shared/table.ts";
 import { getCatalog } from "./catalog.ts";
 import { liveEvents } from "./preview.ts";
@@ -44,7 +45,7 @@ function liveTable(config: Config, events: Awaited<ReturnType<typeof liveEvents>
         if (withdrawn.has(code)) return "⚠️ withdrawn";
         const cells = stock
           .filter((e) => e.plan.planCode === code && e.datacenter.code === dc)
-          .map((e) => `${e.status === "available" ? "🟢" : "🔴"}${config.os.length > 1 ? ` ${e.os === "linux" ? "Linux" : "Windows"}` : ""}`);
+          .map((e) => `${e.status === "available" ? "🟢" : "🔴"}${config.os.length > 1 ? ` ${OS_LABEL[e.os]}` : ""}`);
         return cells.join(" · ") || "-";
       }),
     ]);

@@ -1,4 +1,3 @@
-import { stat } from "node:fs/promises";
 import { describeIssue } from "../shared/http.ts";
 import { readJsonFile, writeJsonFile } from "../shared/json-file.ts";
 import { CONFIG_PATH } from "../shared/paths.ts";
@@ -38,13 +37,4 @@ export async function loadConfig(): Promise<ConfigLoadResult> {
 
 export async function saveConfig(config: Config) {
   await writeJsonFile(CONFIG_PATH, configSchema.parse(config));
-}
-
-/** Modification time of config.json, or 0 if it doesn't exist. */
-export async function configMtime(): Promise<number> {
-  try {
-    return (await stat(CONFIG_PATH)).mtimeMs;
-  } catch {
-    return 0;
-  }
 }
