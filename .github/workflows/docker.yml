@@ -71,5 +71,5 @@ jobs:
     steps:
       - uses: dataaxiom/ghcr-cleanup-action@v1
         with:
-          delete-untagged: true
+          # Deletes the untagged images except the newest 5 (exclusive with delete-untagged).
           keep-n-untagged: 5
